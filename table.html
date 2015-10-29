@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hi there</title>
+    <style>
+        table {
+            width:100%;
+        }
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 5px;
+            text-align: left;
+            vertical-align: top;
+        }
+        td {
+            white-space: pre;
+        }
+    </style>
+
+    <script src="js/jquery.min.js"></script>
+    
+    <script type="text/javascript">
+    	var json;
+    	function get(){
+            document.getElementById("treeview").innerHTML = "loading..."
+            var time_profiler = new Date();
+
+            if (window.XMLHttpRequest) {
+                // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            } else {
+                // code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    json = JSON.parse(xmlhttp.responseText);
+                    document.getElementById("treeview").innerHTML = "done! Time spent: " + ( (new Date()).getTime() - time_profiler.getTime() );
+                    //renderTable();
+                    //document.getElementById("treeview").innerHTML+= "    render complete!";
+                }
+            }
+
+            var fields = document.getElementById('field').value;
+            var objects = document.getElementById('object').value;
+            var url = "http://knowledgear.com/node/api/retrieveSummary";
+            var request = '';
+            if (fields.length > 0) {
+                request+= 'field='+fields;
+            }
+            if (objects.length > 0) {
+                if (request.length > 0)
+                    request+= '&object='+objects;
+                else 
+                    request+= 'object='+objects;
+            }
+            if (request.length > 0) {
+                url+= '?'+request;
+            }
+
+            xmlhttp.open("GET", url, true);
+            //xmlhttp.open("GET", "http://knowledgear.com/node/api/getTable", true);
+            xmlhttp.send();
+        }
+
+        function renderTable() {
+            var tableHtml = '';
+            tableHtml += '<table>';
+
+            for (var fieldAttr in json) {
+                tableHtml += '<tr><th></th>';
+                for (var objectAttr in json[fieldAttr]) {
+                    if (objectAttr != 'student_138') continue;
+                    tableHtml+= '<th>'+objectAttr+'</th>';
+                }
+                break;
+                tableHtml += '</tr>';
+            }
+
+            for (var fieldAttr in json) {
+                tableHtml += '<tr>';
+                tableHtml += '<th>' + fieldAttr + '</th>';
+                for (var objectAttr in json[fieldAttr]) {
+                    if (objectAttr != 'student_138') continue;
+                    tableHtml+= '<td>'+ JSON.stringify( json[fieldAttr][objectAttr], null, 4 ) +'</td>';
+                }
+                tableHtml += '</tr>';
+            }
+
+            tableHtml += '</table>';
+            document.getElementById("table").innerHTML = tableHtml;
+        }
+
+        $(document).ready(function() {
+            console.log("document loaded");
+            $.getJSON("server/persist/summaryTable", function(o) {
+                document.getElementById("treeview").innerHTML = 'summaryTable loaded';
+                json = o;
+                renderTable();
+            });
+        });
+
+    </script>
+
+</head>
+
+<body>
+    <div>fields:    <input type="text" id="field"></div><br>
+    <div>objects:   <input type="text" id="object"></div><br>
+    <button onclick="get()">fetch</button>
+    <button onclick="renderTable()">render</button>
+    <div id="treeview">stand by</div>
+    <div id="table" />
+</body>
+</html>
