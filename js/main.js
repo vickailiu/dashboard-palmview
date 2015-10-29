@@ -157,7 +157,10 @@ function createSchoolOverview() {
     $('#school_overview').on("click", ".c3", function(e) {
         var index = parseInt(e.currentTarget.id.substr(8));
         if (index == 0) return;
-        createClassStudentProgress('class_' + (index + 4));
+        var cardID = createClassStudentProgress('class_' + (index + 4));
+
+        var element_to_scroll_to = $('#'+cardID)[0];
+        element_to_scroll_to.scrollIntoView();
         // console.log(e);
     });
 
@@ -648,6 +651,8 @@ function createClassStudentProgress(classKey) {
             }
         });
     }
+
+    return 'class_overview_' + id;
 }
 
 var activityCaption = ["","","Video - Addition/Subtraction",
