@@ -1087,6 +1087,97 @@ function renderVideoActivity(activityID, studentID) {
     }
 }
 
+function renderPattern(activityID, studentID) {
+    var follow = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight;
+    var follow_c = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight_correct;
+    var inorder = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_inorderRight;
+    var inorder_c = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_inorderRight_correct;
+    var notFollow = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow;
+    var notFollow_c = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow_correct;
+    var incomplete = summaryTable[activityID][studentID].summary.question.sequenceCat.incomplete;
+
+    var c3Columns = [
+        ['Follow Steps', follow],
+        ['Not in Sequence', inorder],
+        ['Missing Steps', notFollow],
+        ['Incomplete', incomplete]
+    ];
+    c3.generate({
+        bindto: '#' + studentID + '_' + activityID + '_pattern',
+        data: {
+            columns: c3Columns,
+            colors: {
+                'Follow Steps': 'yellowgreen',
+                'Not in Sequence': 'green',
+                'Missing Steps': 'orange',
+                'Incomplete': 'lightgray'
+            },
+            type: 'donut'
+        },
+        donut: {
+            width: 40
+        },
+        tooltip: {
+            contents: function(d, defaultTitleFormat, defaultValueFormat, color) {
+                var titleFormat = defaultTitleFormat,
+                    nameFormat = function(name) {
+                        return name;
+                    },
+                    valueFormat = defaultValueFormat,
+                    text, i, title, value, name, bgcolor;
+                for (i = 0; i < d.length; i++) {
+                    if (!(d[i] && (d[i].value || d[i].value === 0))) {
+                        continue;
+                    }
+
+                    if (!text) {
+                        title = titleFormat ? titleFormat(d[i].x) : d[i].x;
+                        text = "<table class='" + this.CLASS.tooltip + "'>" + (title || title === 0 ? "<tr><th colspan='2'>" + title + "</th></tr>" : "");
+                    }
+
+                    value = valueFormat(d[i].value, d[i].ratio, d[i].id, d[i].index);
+                    if (value !== undefined) {
+                        name = nameFormat(d[i].name, d[i].ratio, d[i].id, d[i].index);
+                        bgcolor = color(d[i].id);
+
+                        text += "<tr class='" + this.CLASS.tooltipName + "-" + d[i].id + "'>";
+                        text += "<td class='name'><span style='background-color:" + bgcolor + "'></span>" + name + "</td>";
+                        text += "<td class='value'>" + value + "</td>";
+                        text += "</tr>";
+
+                        if (d[i].id == 'Follow Steps' || d[i].id == 'Not in Sequence' || d[i].id == 'Missing Steps') {
+                            var ele = $(event.path).filter("div")[0];
+                            var rate = 0;
+                            if (ele) {
+                                var substr = ele.id.split('_');
+                                var studentID = substr[0]+'_'+substr[1];
+                                var activityID = substr[2]+'_'+substr[3];
+                                if (d[i].id == 'Follow Steps') {
+                                    rate = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight_correct/summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight;
+                                } else if (d[i].id == 'Not in Sequence') {
+                                    rate = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_inorderRight_correct/summaryTable[activityID][studentID].summary.question.sequenceCat.complete_inorderRight;
+                                } else {
+                                    rate = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow_correct / summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow;
+                                }
+                            }
+                            rate = Math.round(rate * 10000) / 100 + '%'
+                            text += "<tr>";
+                            text += "<td class='name'>answer correctly</td>";
+                            text += "<td class='value'>" + rate + "</td>";
+                            text += "</tr>";
+                        }
+                    }
+                }
+                return text + "</table>";
+            }
+        },
+        size: {
+            height: 256,
+            width: 256
+        }
+    });
+}
+
 function renderMCQModelActivity(activityID, studentID) {
     var content = '';
     content += '<h6>Activity ' + activityID.substr(9) + ': ' + activityCaption[activityID.substr(9)] + '</h6>';
@@ -1124,90 +1215,7 @@ function renderMCQModelActivity(activityID, studentID) {
     content += '</div>';
 
     $('#tab_' + studentID + '_' + activityID).append(content);
-
-    var follow = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight;
-    var follow_c = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight_correct;
-    var notFollow = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow;
-    var notFollow_c = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow_correct;
-    var incomplete = summaryTable[activityID][studentID].summary.question.sequenceCat.incomplete;
-
-    var c3Columns = [
-        ['Follow Steps', follow],
-        ['Not Follow Steps', notFollow],
-        ['Incomplete', incomplete]
-    ];
-    c3.generate({
-        bindto: '#' + studentID + '_' + activityID + '_pattern',
-        data: {
-            columns: c3Columns,
-            colors: {
-                'Follow Steps': 'green',
-                'Not Follow Steps': 'orange',
-                'Incomplete': 'lightgray'
-            },
-            type: 'donut'
-        },
-        donut: {
-            width: 40
-        },
-        tooltip: {
-            contents: function(d, defaultTitleFormat, defaultValueFormat, color) {
-                var titleFormat = defaultTitleFormat,
-                    nameFormat = function(name) {
-                        return name;
-                    },
-                    valueFormat = defaultValueFormat,
-                    text, i, title, value, name, bgcolor;
-                for (i = 0; i < d.length; i++) {
-                    if (!(d[i] && (d[i].value || d[i].value === 0))) {
-                        continue;
-                    }
-
-                    if (!text) {
-                        title = titleFormat ? titleFormat(d[i].x) : d[i].x;
-                        text = "<table class='" + this.CLASS.tooltip + "'>" + (title || title === 0 ? "<tr><th colspan='2'>" + title + "</th></tr>" : "");
-                    }
-
-                    value = valueFormat(d[i].value, d[i].ratio, d[i].id, d[i].index);
-                    if (value !== undefined) {
-                        name = nameFormat(d[i].name, d[i].ratio, d[i].id, d[i].index);
-                        bgcolor = color(d[i].id);
-
-                        text += "<tr class='" + this.CLASS.tooltipName + "-" + d[i].id + "'>";
-                        text += "<td class='name'><span style='background-color:" + bgcolor + "'></span>" + name + "</td>";
-                        text += "<td class='value'>" + value + "</td>";
-                        text += "</tr>";
-
-                        if (d[i].id == 'Follow Steps' || d[i].id == 'Not Follow Steps') {
-                        	var ele = $(event.path).filter("div")[0];
-                        	var rate = 0;
-                        	if (ele) {
-                        		var substr = ele.id.split('_');
-                        		var studentID = substr[0]+'_'+substr[1];
-                        		var activityID = substr[2]+'_'+substr[3];
-                        		if (d[i].id == 'Follow Steps') {
-                        			rate = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight_correct/summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight;
-                        		} else {
-                        			rate = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow_correct / summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow;
-                        		}
-                        	}
-                        	rate = Math.round(rate * 10000) / 100 + '%'
-							text += "<tr>";
-							text += "<td class='name'>answer correctly</td>";
-							text += "<td class='value'>" + rate + "</td>";
-							text += "</tr>";
-                        }
-                    }
-                }
-                return text + "</table>";
-            }
-        },
-        size: {
-            height: 256,
-            width: 256
-        }
-    });
-
+    renderPattern(activityID, studentID);
     // dummyPie(studentID+'_'+activityID+'_pattern',
     //         follow, follow_c, notFollow, notFollow_c, incomplete);
 
@@ -1334,40 +1342,7 @@ function renderModelActivity(activityID, studentID) {
     content += '</div>';
 
     $('#tab_' + studentID + '_' + activityID).append(content);
-
-    var follow = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight;
-    var notFollow = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow;
-    var incomplete = summaryTable[activityID][studentID].summary.question.sequenceCat.incomplete;
-
-    var c3Columns = [
-        ['Follow Steps', follow],
-        ['Not Follow Steps', notFollow],
-        ['Incomplete', incomplete]
-    ];
-    c3.generate({
-        bindto: '#' + studentID + '_' + activityID + '_pattern',
-        data: {
-            columns: c3Columns,
-            colors: {
-                'Follow Steps': 'green',
-                'Not Follow Steps': 'orange',
-                'Incomplete': 'lightgray'
-            },
-            type: 'donut'
-        },
-        donut: {
-            width: 40
-                //       label: {
-                //     format: function (value, ratio, id) {
-                //           return value;
-                //     }
-                // }
-        },
-        size: {
-            height: 256,
-            width: 256
-        }
-    });
+    renderPattern(activityID, studentID);
 
     var w_a_r_ignore = summaryTable[activityID][studentID].summary.question.wrong_answer_reaction.ignore * summaryTable[activityID][studentID].summary.question.number;
     var w_a_r_review = summaryTable[activityID][studentID].summary.question.wrong_answer_reaction.review * summaryTable[activityID][studentID].summary.question.number;
@@ -1444,12 +1419,14 @@ function renderMCQActivity(activityID, studentID) {
     $('#tab_' + studentID + '_' + activityID).append(content);
 
     var follow = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_followRight;
+    var inorder = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_inorderRight;
     var notFollow = summaryTable[activityID][studentID].summary.question.sequenceCat.complete_notFollow;
     var incomplete = summaryTable[activityID][studentID].summary.question.sequenceCat.incomplete;
 
     var c3Columns = [
         ['Follow Steps', follow],
-        ['Not Follow Steps', notFollow],
+        ['Not in Sequence', inorder],
+        ['Missing Steps', notFollow],
         ['Incomplete', incomplete]
     ];
     c3.generate({
@@ -1457,19 +1434,15 @@ function renderMCQActivity(activityID, studentID) {
         data: {
             columns: c3Columns,
             colors: {
-                'Follow Steps': 'green',
-                'Not Follow Steps': 'orange',
+                'Follow Steps': 'yellowgreen',
+                'Not in Sequence': 'green',
+                'Missing Steps': 'orange',
                 'Incomplete': 'lightgray'
             },
             type: 'donut'
         },
         donut: {
             width: 40
-                //       label: {
-                //     format: function (value, ratio, id) {
-                //           return value;
-                //     }
-                // }
         },
         size: {
             height: 256,

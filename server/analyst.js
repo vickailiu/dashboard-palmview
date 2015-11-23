@@ -209,6 +209,59 @@ var routes = {
         return;
       }
 
+      // clean the duplications
+      console.log(rows.length);
+
+      var preTime, preDuration, preActionType, preAction, preTarget1, preTarget2, prePhaseID, preCorrect, preStudentID, preSessionID;
+      var indicies = [];
+      for (var i = 0; i<rows.length; i++) {
+        var time = (new Date(rows[i].time)).getTime();
+        if (time == preTime &&
+            // rows[i].duration == preDuration &&
+            rows[i].actionType == preActionType &&
+            rows[i].action == preAction &&
+            rows[i].target1 == preTarget1 &&
+            rows[i].target2 == preTarget2 &&
+            rows[i].phaseID == prePhaseID &&
+            rows[i].correct == preCorrect &&
+            rows[i].studentID == preStudentID &&
+            rows[i].sessionID == preSessionID)
+        {
+          // console.log({'now':rows[i], 'pre': [preTime, preDuration, preActionType, preAction, preTarget1, preTarget2, prePhaseID, preCorrect, preStudentID, preSessionID]});
+          indicies.push(i);
+          // console.log(i);
+        } else {
+
+          // if (time == preTime &&
+          //   rows[i].duration != preDuration &&
+          //   rows[i].actionType == preActionType &&
+          //   rows[i].action == preAction && 
+          //   rows[i].studentID == preStudentID &&
+          //   rows[i].sessionID == preSessionID &&
+          //   rows[i].target1 == preTarget1 
+          //   && rows[i].target2 == preTarget2)
+          //   console.log({'now':rows[i], 'pre': [preTime, preDuration, preActionType, preAction, preTarget1, preTarget2, prePhaseID, preCorrect, preStudentID, preSessionID]});
+
+          preTime = time;
+          // preDuration = rows[i].duration;
+          preActionType = rows[i].actionType;
+          preAction = rows[i].action;
+          preTarget1 = rows[i].target1;
+          preTarget2 = rows[i].target2;
+          prePhaseID = rows[i].phaseID;
+          preCorrect = rows[i].correct;
+          preStudentID = rows[i].studentID;
+          preSessionID = rows[i].sessionID;
+        }
+      }
+      console.log(indicies.length);
+
+      for (var i = indicies.length-1; i>-1; i--) {
+        rows.splice(indicies[i],1);
+      }
+      console.log('after clearning the duplication');
+      console.log(rows.length);
+
       var time_profiler = new Date();
 
       var currentStudentID;
@@ -565,6 +618,9 @@ var routes = {
                 questionSummaryNode.sequenceCat.complete_followRight = 0;
                 questionSummaryNode.sequenceCat.complete_followRight_correct = 0;
                 questionSummaryNode.sequenceCat.complete_followRight_incorrect = 0
+                questionSummaryNode.sequenceCat.complete_inorderRight = 0;
+                questionSummaryNode.sequenceCat.complete_inorderRight_correct = 0;
+                questionSummaryNode.sequenceCat.complete_inorderRight_incorrect = 0
                 questionSummaryNode.sequenceCat.complete_notFollow = 0;
                 questionSummaryNode.sequenceCat.complete_notFollow_correct = 0;
                 questionSummaryNode.sequenceCat.complete_notFollow_incorrect = 0;
@@ -580,6 +636,9 @@ var routes = {
                   questionSummaryNode.sequenceCat.complete_followRight += questionNode.sequenceCat.complete_followRight;
                   questionSummaryNode.sequenceCat.complete_followRight_correct += questionNode.sequenceCat.complete_followRight_correct;
                   questionSummaryNode.sequenceCat.complete_followRight_incorrect += questionNode.sequenceCat.complete_followRight_incorrect;
+                  questionSummaryNode.sequenceCat.complete_inorderRight += questionNode.sequenceCat.complete_inorderRight;
+                  questionSummaryNode.sequenceCat.complete_inorderRight_correct += questionNode.sequenceCat.complete_inorderRight_correct;
+                  questionSummaryNode.sequenceCat.complete_inorderRight_incorrect += questionNode.sequenceCat.complete_inorderRight_incorrect;
                   questionSummaryNode.sequenceCat.complete_notFollow += questionNode.sequenceCat.complete_notFollow;
                   questionSummaryNode.sequenceCat.complete_notFollow_correct += questionNode.sequenceCat.complete_notFollow_correct;
                   questionSummaryNode.sequenceCat.complete_notFollow_incorrect += questionNode.sequenceCat.complete_notFollow_incorrect;
@@ -735,6 +794,9 @@ var routes = {
               activitySummaryNode.question.sequenceCat.complete_followRight = 0;
               activitySummaryNode.question.sequenceCat.complete_followRight_correct = 0;
               activitySummaryNode.question.sequenceCat.complete_followRight_incorrect = 0
+              activitySummaryNode.question.sequenceCat.complete_inorderRight = 0;
+              activitySummaryNode.question.sequenceCat.complete_inorderRight_correct = 0;
+              activitySummaryNode.question.sequenceCat.complete_inorderRight_incorrect = 0;
               activitySummaryNode.question.sequenceCat.complete_notFollow = 0;
               activitySummaryNode.question.sequenceCat.complete_notFollow_correct = 0;
               activitySummaryNode.question.sequenceCat.complete_notFollow_incorrect = 0;
@@ -753,6 +815,9 @@ var routes = {
                   activitySummaryNode.question.sequenceCat.complete_followRight += questionNode.sequenceCat.complete_followRight;
                   activitySummaryNode.question.sequenceCat.complete_followRight_correct += questionNode.sequenceCat.complete_followRight_correct;
                   activitySummaryNode.question.sequenceCat.complete_followRight_incorrect += questionNode.sequenceCat.complete_followRight_incorrect;
+                  activitySummaryNode.question.sequenceCat.complete_inorderRight += questionNode.sequenceCat.complete_inorderRight;
+                  activitySummaryNode.question.sequenceCat.complete_inorderRight_correct += questionNode.sequenceCat.complete_inorderRight_correct;
+                  activitySummaryNode.question.sequenceCat.complete_inorderRight_incorrect += questionNode.sequenceCat.complete_inorderRight_incorrect;
                   activitySummaryNode.question.sequenceCat.complete_notFollow += questionNode.sequenceCat.complete_notFollow;
                   activitySummaryNode.question.sequenceCat.complete_notFollow_correct += questionNode.sequenceCat.complete_notFollow_correct;
                   activitySummaryNode.question.sequenceCat.complete_notFollow_incorrect += questionNode.sequenceCat.complete_notFollow_incorrect;
@@ -765,6 +830,9 @@ var routes = {
               activitySummaryNode.question.sequenceCat.complete_followRight = 1.0 * activitySummaryNode.question.sequenceCat.complete_followRight / activitySummaryNode.question.number;
               activitySummaryNode.question.sequenceCat.complete_followRight_correct = 1.0 * activitySummaryNode.question.sequenceCat.complete_followRight_correct / activitySummaryNode.question.number;
               activitySummaryNode.question.sequenceCat.complete_followRight_incorrect = 1.0 * activitySummaryNode.question.sequenceCat.complete_followRight_incorrect / activitySummaryNode.question.number;
+              activitySummaryNode.question.sequenceCat.complete_inorderRight = 1.0 * activitySummaryNode.question.sequenceCat.complete_inorderRight / activitySummaryNode.question.number;
+              activitySummaryNode.question.sequenceCat.complete_inorderRight_correct = 1.0 * activitySummaryNode.question.sequenceCat.complete_inorderRight_correct / activitySummaryNode.question.number;
+              activitySummaryNode.question.sequenceCat.complete_inorderRight_incorrect = 1.0 * activitySummaryNode.question.sequenceCat.complete_inorderRight_incorrect / activitySummaryNode.question.number;
               activitySummaryNode.question.sequenceCat.complete_notFollow = 1.0 * activitySummaryNode.question.sequenceCat.complete_notFollow / activitySummaryNode.question.number;
               activitySummaryNode.question.sequenceCat.complete_notFollow_correct = 1.0 * activitySummaryNode.question.sequenceCat.complete_notFollow_correct / activitySummaryNode.question.number;
               activitySummaryNode.question.sequenceCat.complete_notFollow_incorrect = 1.0 * activitySummaryNode.question.sequenceCat.complete_notFollow_incorrect / activitySummaryNode.question.number;
@@ -2531,7 +2599,7 @@ var regex = {
     unRightInComplt :       /(^R,|S,R,)((?![A])[A-Z],){0,}$/
   },
   4: {
-    followRight:            /(R,)((([B-Z])(([B-Z]){0,}),){0,})((I,){1,})((([B-Z])(([B-Z]){0,}),){0,})((G,){1,})((([B-Z])(([B-Z]){0,}),){0,})((H,){1,})((([B-Z])(([B-Z]){0,}),){0,})((A|AW|AC),)/
+    followRight:            /^(R,|S,R,)(((((([A-Z]){1,2}),){0,})(undefined,)){0,})(((([A-Z]){1,2}),){0,})((I,){1,})(((([A-Z]){1,2}),){0,})((G,){1,})(((([A-Z]){1,2}),){0,})((H,){1,})(((([A-Z]){1,2}),){0,})((A|AW|AC),)/
   },
   5: {
     followRight:            /(R,)((([A-Z]),){0,})(I,)((([A-Z]),){0,})(A,)/
@@ -2548,44 +2616,69 @@ function getSequenceCat(sequence, activityID) {
   cat.complete = 0;
   cat.complete_followRight = 0;
   cat.complete_followRight_correct = 0;
-  cat.complete_followRight_incorrect = 0
+  cat.complete_followRight_incorrect = 0;
+  cat.complete_inorderRight = 0;
+  cat.complete_inorderRight_correct = 0;
+  cat.complete_inorderRight_incorrect = 0;
   cat.complete_notFollow = 0;
   cat.complete_notFollow_correct = 0;
   cat.complete_notFollow_incorrect = 0;
   cat.incomplete = 0;
 
   if (activityID == 3) {
+    // console.log(sq);
     if (regex[activityID].followRight.test(sq)) {
+      cat.complete = 1;
       cat.complete_followRight = 1;
       if (sq.indexOf('AC') >= 0) {
         cat.complete_followRight_correct = 1;
-      } else if (sq.indexOf('AW') >= 0) {
+      } else {
         cat.complete_followRight_incorrect = 1;
       }
+    } else if ((sq.indexOf('R,')>-1) && (sq.indexOf(',I,')>-1) && (sq.indexOf('A')>-1)) {
+      cat.complete = 1;
+      cat.complete_inorderRight = 1;
+      if (sq.indexOf('AC') >= 0) {
+        cat.complete_inorderRight_correct = 1;
+      } else {
+        cat.complete_inorderRight_incorrect = 1;
+      }
     } else {
-      if (regex[activityID].unRightComplete.test(sq)) {
+      if (sq.indexOf('A') >= 0) {
+        cat.complete = 1;
         cat.complete_notFollow = 1;
         if (sq.indexOf('AC') >= 0) {
           cat.complete_notFollow_correct = 1;
         } else if (sq.indexOf('AW') >= 0) {
           cat.complete_notFollow_incorrect = 1;
         }
-      } else if (regex[activityID].unRightInComplt.test(sq)) {
-        cat.incomplete = 1
+      } else {
+        cat.incomplete = 1;
       }
     }
   }
 
   if (activityID == 4) {
-    if (regex[activityID].followRight.test(sq)) {
+    //console.log(sq);
+    if (regex[activityID].followRight.test(sq)) {       // follow right
+      cat.complete = 1;
       cat.complete_followRight = 1;
       if (sq.indexOf('AC') >= 0) {
         cat.complete_followRight_correct = 1;
-      } else if (sq.indexOf('AW') >= 0) {
+      } else {
         cat.complete_followRight_incorrect = 1;
+      }
+    } else if ((sq.indexOf('R,')>-1) && (sq.indexOf(',I,')>-1) && (sq.indexOf(',G,')>-1) && (sq.indexOf(',H,')>-1) && (sq.indexOf('A')>-1) ) {  // right but inorder
+      cat.complete = 1;
+      cat.complete_inorderRight = 1;
+      if (sq.indexOf('AC') >= 0) {
+        cat.complete_inorderRight_correct = 1;
+      } else {
+        cat.complete_inorderRight_incorrect = 1;
       }
     } else {
       if (sq.indexOf('A') >= 0) {
+        cat.complete = 1;
         cat.complete_notFollow = 1;
         if (sq.indexOf('AC') >= 0) {
           cat.complete_notFollow_correct = 1;
@@ -2599,10 +2692,16 @@ function getSequenceCat(sequence, activityID) {
   }
 
   if (activityID == 5) {
+    // console.log(sq);
     if (regex[activityID].followRight.test(sq)) {
+      cat.complete = 1;
       cat.complete_followRight = 1;
+    } else if ((sq.indexOf('R,')>-1) && (sq.indexOf(',I,')>-1) && (sq.indexOf('A')>-1)) {
+      cat.complete = 1;
+      cat.complete_inorderRight = 1;
     } else {
       if (sq.indexOf('A') >= 0) {
+        cat.complete = 1;
         cat.complete_notFollow = 1;
       } else {
         cat.incomplete = 1;
@@ -2649,7 +2748,7 @@ var server = http.createServer(function(request, response) {
     _response.end();
   }
 });
-server.listen(1337,'127.0.0.1');
+// server.listen(1337,'127.0.0.1');
 // production
-// server.listen(8000,'127.0.0.1');
+server.listen(8000,'127.0.0.1');
 console.log('running');
