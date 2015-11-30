@@ -378,6 +378,21 @@
   color: #3f51b5 !important;
 }
 
+.bgm-SeaGreen {
+  background-color: SeaGreen !important;
+}
+
+.bgm-MediumSeaGreen {
+  background-color: MediumSeaGreen !important;
+}
+.bgm-MediumSpringGreen {
+  background-color: Medium SpringGreen !important;
+}
+
+.bgm-SpringGreen {
+  background-color: SpringGreen !important;
+}
+
 /*
  * Background Colors
  */
