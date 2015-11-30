@@ -1324,6 +1324,21 @@ function renderModelActivity(activityID, studentID) {
     content += '</div>';
 
     content += '<div class="activity-summary">';
+    content += addMiniCard('Highlighted Words',
+        summaryTable[activityID][studentID].summary.question.highlightedWords,
+        'SeaGreen');
+    content += addMiniCard('Right Plan Type',
+        Math.round(1.0*summaryTable[activityID][studentID].summary.question.workout_planType.correctSubmitTimes/summaryTable[activityID][studentID].summary.question.workout_planType.submitTimes * 100) + '%',
+        'MediumSeaGreen');
+    content += addMiniCard('Right Plan Model',
+        Math.round(1.0*summaryTable[activityID][studentID].summary.question.workout_planModel.correctSubmitTimes/summaryTable[activityID][studentID].summary.question.workout_planModel.submitTimes * 100) + '%',
+        'MediumSpringGreen');
+    content += addMiniCard('Right Equation',
+        Math.round(1.0*summaryTable[activityID][studentID].summary.question.workout_equation.correct/summaryTable[activityID][studentID].summary.question.workout_equation.times * 100) + '%',
+        'SpringGreen');
+    content += '</div>';
+
+    content += '<div class="activity-summary">';
     // answer pattern
     content += '<div class="solid-card large mdl-card mdl-shadow--2dp bgm-white">\
                       <div class="mdl-card__title mdl-card--expand">\
