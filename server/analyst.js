@@ -10,7 +10,7 @@ storage.initSync();
 // mysql connector
 var mysql      = require('mysql');
 var connection = mysql.createConnection({
-  host      : 'ntuedm.c0em9fik78su.ap-southeast-1.rds.amazonaws.com',
+  host      : 'ntuedm.cbjb06heo433.ap-southeast-1.rds.amazonaws.com',
   port      : '3306',         // MySQL server port number (default 3306)
   database  : 'ntuedm',       // MySQL database name
   user      : 'school',       // MySQL username
@@ -216,6 +216,11 @@ var routes = {
       var indicies = [];
       for (var i = 0; i<rows.length; i++) {
         var time = (new Date(rows[i].time)).getTime();
+        var tempCorrect;
+        if (rows[i].correct === null)
+            tempCorrect = null;
+          else
+            tempCorrect = !!rows[i].correct[0]
         if (time == preTime &&
             // rows[i].duration == preDuration &&
             rows[i].actionType == preActionType &&
@@ -223,7 +228,7 @@ var routes = {
             rows[i].target1 == preTarget1 &&
             rows[i].target2 == preTarget2 &&
             rows[i].phaseID == prePhaseID &&
-            rows[i].correct == preCorrect &&
+            tempCorrect == preCorrect &&
             rows[i].studentID == preStudentID &&
             rows[i].sessionID == preSessionID)
         {
@@ -231,17 +236,6 @@ var routes = {
           indicies.push(i);
           // console.log(i);
         } else {
-
-          // if (time == preTime &&
-          //   rows[i].duration != preDuration &&
-          //   rows[i].actionType == preActionType &&
-          //   rows[i].action == preAction && 
-          //   rows[i].studentID == preStudentID &&
-          //   rows[i].sessionID == preSessionID &&
-          //   rows[i].target1 == preTarget1 
-          //   && rows[i].target2 == preTarget2)
-          //   console.log({'now':rows[i], 'pre': [preTime, preDuration, preActionType, preAction, preTarget1, preTarget2, prePhaseID, preCorrect, preStudentID, preSessionID]});
-
           preTime = time;
           // preDuration = rows[i].duration;
           preActionType = rows[i].actionType;
@@ -249,7 +243,11 @@ var routes = {
           preTarget1 = rows[i].target1;
           preTarget2 = rows[i].target2;
           prePhaseID = rows[i].phaseID;
-          preCorrect = rows[i].correct;
+          if (rows[i].correct === null)
+            preCorrect = null;
+          else
+            preCorrect = !!rows[i].correct[0]
+          // preCorrect = rows[i].correct;
           preStudentID = rows[i].studentID;
           preSessionID = rows[i].sessionID;
         }
@@ -1805,12 +1803,15 @@ function processStudentLog(studentNode) {
             tailNode = null;
 
             sequenceNode = {};
-            sequenceNode.label = _event.correct ? 'AC' : 'AW';
+            
             if (_event.action == 'tut_equation') {
+              sequenceNode.label = 'EQ'
               var equation = _event.target2;
               equation = equation.replace('Ã·', '/');
               equation = equation.replace(' ', currentQuestionSelectedOperator);
               sequenceNode.equation = equation;
+            } else {
+              sequenceNode.label = _event.correct ? 'AC' : 'AW';  
             }
             currentQuestionNode.sequence.push(sequenceNode);
             sequenceNode = null;
@@ -2305,238 +2306,9 @@ function processStudentLog(studentNode) {
       });
       // end of activities
 
-      //summarize session node
-      currentSessionNode.start = currentSessionNode.activities[0].start;
-      currentSessionNode.end = currentSessionNode.activities[currentSessionNode.activities.length-1].end;
-      currentSessionNode.duration = currentSessionNode.end.getTime() - currentSessionNode.start.getTime();
-      currentSessionNode.offTask = {};
-      currentSessionNode.offTask.instances = [];
-      currentSessionNode.offTask.duration = 0;
-      currentSessionNode.videos = {};
-      currentSessionNode.reinforcedActivities = 0;
-      currentSessionNode.completedActivities = 0;
-      currentSessionNode.questionSummary = {};
-      currentSessionNode.questionSummary.questionNumber = 0;
-      currentSessionNode.questionSummary.duration = 0;
-      currentSessionNode.questionSummary.correct = 0;
-      currentSessionNode.questionSummary.highlightedWords = 0;
-      currentSessionNode.questionSummary.workout_planType = {};
-      currentSessionNode.questionSummary.workout_planType.times = 0;
-      currentSessionNode.questionSummary.workout_planType.correct = 0;
-      currentSessionNode.questionSummary.workout_planType.submitTimes = 0;
-      currentSessionNode.questionSummary.workout_planType.correctSubmitTimes = 0;
-      currentSessionNode.questionSummary.workout_planModel = {};
-      currentSessionNode.questionSummary.workout_planModel.times = 0;
-      currentSessionNode.questionSummary.workout_planModel.correct = 0;
-      currentSessionNode.questionSummary.workout_planModel.submitTimes = 0;
-      currentSessionNode.questionSummary.workout_planModel.correctSubmitTimes = 0;
-      currentSessionNode.questionSummary.workout_dragDrops = {};
-      currentSessionNode.questionSummary.workout_dragDrops.incomplete_attempts = 0;
-      currentSessionNode.questionSummary.workout_dragDrops.complete_attempts = 0;
-      currentSessionNode.questionSummary.workout_dragDrops.correct_attampts = 0;
-      currentSessionNode.questionSummary.workout_equation = {};
-      currentSessionNode.questionSummary.workout_equation.times = 0;
-      currentSessionNode.questionSummary.workout_equation.correct = 0;
-      currentSessionNode.questionSummary.answer = {};
-      currentSessionNode.questionSummary.answer.times = 0;
-      currentSessionNode.questionSummary.answer.correct = 0;
-      currentSessionNode.questionSummary.answer.submitTimes = 0;
-      currentSessionNode.questionSummary.answer.correctSubmitTimes = 0;
-      currentSessionNode.questionSummary.wrong_answer_reaction = {};
-      currentSessionNode.questionSummary.wrong_answer_reaction.ignore = 0;
-      currentSessionNode.questionSummary.wrong_answer_reaction.review = 0;
-      currentSessionNode.questionSummary.wrong_answer_reaction.hint = 0;
-
-
-      for (var i = 0; i<currentSessionNode.activities.length; i++) {
-        // offTask
-        Array.prototype.push.apply(currentSessionNode.offTask.instances, currentSessionNode.activities[i].offTask.instances);
-        currentSessionNode.offTask.duration += currentSessionNode.activities[i].offTask.totalduration;
-
-        var videoID;
-
-        //video
-        for (videoID in currentSessionNode.activities[i].videos) {
-          if (!currentSessionNode.videos[videoID]) {
-            currentSessionNode.videos[videoID] = {};
-            currentSessionNode.videos[videoID].activeDuration = 0;
-            currentSessionNode.videos[videoID].pauseTimes = 0;
-            currentSessionNode.videos[videoID].pauseDuration = 0;
-            currentSessionNode.videos[videoID].watchedIntervals = {};
-            currentSessionNode.videos[videoID].watchedIntervals.rawIntervals = [];
-            currentSessionNode.videos[videoID].watchedPercentage = 0;
-          }
-
-          var childVideoNode = currentSessionNode.activities[i].videos[videoID];
-          currentSessionNode.videos[videoID].activeDuration += childVideoNode.activeDuration;
-          currentSessionNode.videos[videoID].pauseTimes += childVideoNode.pauses.length;
-          for (var j = 0; j<childVideoNode.pauses.length; j++) {
-            if (childVideoNode.pauses[j].end) // sometimes there is no end for the pause
-              currentSessionNode.videos[videoID].pauseDuration += childVideoNode.pauses[j].end.getTime() - childVideoNode.pauses[j].start.getTime();
-          }
-          if (childVideoNode.watchedPercentage > 0.99) {
-            currentSessionNode.videos[videoID].watchedPercentage = 1;
-          } else {
-            Array.prototype.push.apply(currentSessionNode.videos[videoID].watchedIntervals.rawIntervals, childVideoNode.watchedIntervals.intervals);
-          }
-
-        }
-
-        // further video summary
-        for (videoID in currentSessionNode.videos) {
-          if (currentSessionNode.videos[videoID].watchedIntervals.rawIntervals && 
-            (currentSessionNode.videos[videoID].watchedPercentage >= 1 ||
-             currentSessionNode.videos[videoID].watchedIntervals.rawIntervals.length === 0)) continue;
-          currentSessionNode.videos[videoID].watchedIntervals = unionPlayedVideoIntervals(currentSessionNode.videos[videoID].watchedIntervals.rawIntervals);
-          currentSessionNode.videos[videoID].watchedPercentage = currentSessionNode.videos[videoID].watchedIntervals.playedLength / videoDuration[videoID];
-          if (currentSessionNode.videos[videoID].watchedPercentage > 0.99)
-            currentSessionNode.videos[videoID].watchedPercentage = 1;  
-        }
-
-        if (currentSessionNode.activities[i].reinforcementTimes>0) {
-          currentSessionNode.reinforcedActivities++;
-        }
-        if (currentSessionNode.activities[i].complete) {
-          currentSessionNode.completedActivities++;
-        }
-
-        // questionSummary
-        currentSessionNode.questionSummary.questionNumber += currentSessionNode.activities[i].questionSummary.questionNumber;
-        currentSessionNode.questionSummary.duration += currentSessionNode.activities[i].questionSummary.duration;
-        currentSessionNode.questionSummary.correct += currentSessionNode.activities[i].questionSummary.correct;
-        currentSessionNode.questionSummary.highlightedWords += currentSessionNode.activities[i].questionSummary.highlightedWords;
-        currentSessionNode.questionSummary.workout_planType.times += currentSessionNode.activities[i].questionSummary.workout_planType.times;
-        currentSessionNode.questionSummary.workout_planType.correct += currentSessionNode.activities[i].questionSummary.workout_planType.correct;
-        currentSessionNode.questionSummary.workout_planType.submitTimes += currentSessionNode.activities[i].questionSummary.workout_planType.submitTimes;
-        currentSessionNode.questionSummary.workout_planType.correctSubmitTimes += currentSessionNode.activities[i].questionSummary.workout_planType.correctSubmitTimes;
-        currentSessionNode.questionSummary.workout_planModel.times += currentSessionNode.activities[i].questionSummary.workout_planModel.times;
-        currentSessionNode.questionSummary.workout_planModel.correct += currentSessionNode.activities[i].questionSummary.workout_planModel.correct;
-        currentSessionNode.questionSummary.workout_planModel.submitTimes += currentSessionNode.activities[i].questionSummary.workout_planModel.submitTimes;
-        currentSessionNode.questionSummary.workout_planModel.correctSubmitTimes += currentSessionNode.activities[i].questionSummary.workout_planModel.correctSubmitTimes;
-        currentSessionNode.questionSummary.workout_dragDrops.incomplete_attempts += currentSessionNode.activities[i].questionSummary.workout_dragDrops.incomplete_attempts;
-        currentSessionNode.questionSummary.workout_dragDrops.complete_attempts += currentSessionNode.activities[i].questionSummary.workout_dragDrops.complete_attempts;
-        currentSessionNode.questionSummary.workout_dragDrops.correct_attampts += currentSessionNode.activities[i].questionSummary.workout_dragDrops.correct_attampts;
-        currentSessionNode.questionSummary.workout_equation.times += currentSessionNode.activities[i].questionSummary.workout_equation.times;
-        currentSessionNode.questionSummary.workout_equation.correct += currentSessionNode.activities[i].questionSummary.workout_equation.correct;
-        currentSessionNode.questionSummary.answer.times += currentSessionNode.activities[i].questionSummary.answer.times;
-        currentSessionNode.questionSummary.answer.correct += currentSessionNode.activities[i].questionSummary.answer.correct;
-        currentSessionNode.questionSummary.answer.submitTimes += currentSessionNode.activities[i].questionSummary.answer.submitTimes;
-        currentSessionNode.questionSummary.answer.correctSubmitTimes += currentSessionNode.activities[i].questionSummary.answer.correctSubmitTimes;
-        currentSessionNode.questionSummary.wrong_answer_reaction.ignore += currentSessionNode.activities[i].questionSummary.wrong_answer_reaction.ignore;
-        currentSessionNode.questionSummary.wrong_answer_reaction.review += currentSessionNode.activities[i].questionSummary.wrong_answer_reaction.review;
-        currentSessionNode.questionSummary.wrong_answer_reaction.hint += currentSessionNode.activities[i].questionSummary.wrong_answer_reaction.hint;
-
-      }
-
     });
     // end of sessions
 
-    currentSubjectNode.duration = 0;
-    currentSubjectNode.offTask = {};
-    currentSubjectNode.offTask.instances = [];
-    currentSubjectNode.offTask.duration = 0;
-    currentSubjectNode.videos = {};
-    currentSubjectNode.reinforcedActivities = 0;
-    currentSubjectNode.completedActivities = 0;
-    currentSubjectNode.questionSummary = {};
-    currentSubjectNode.questionSummary.questionNumber = 0;
-    currentSubjectNode.questionSummary.duration = 0;
-    currentSubjectNode.questionSummary.correct = 0;
-    currentSubjectNode.questionSummary.highlightedWords = 0;
-    currentSubjectNode.questionSummary.workout_planType = {};
-    currentSubjectNode.questionSummary.workout_planType.times = 0;
-    currentSubjectNode.questionSummary.workout_planType.correct = 0;
-    currentSubjectNode.questionSummary.workout_planType.submitTimes = 0;
-    currentSubjectNode.questionSummary.workout_planType.correctSubmitTimes = 0;
-    currentSubjectNode.questionSummary.workout_planModel = {};
-    currentSubjectNode.questionSummary.workout_planModel.times = 0;
-    currentSubjectNode.questionSummary.workout_planModel.correct = 0;
-    currentSubjectNode.questionSummary.workout_planModel.submitTimes = 0;
-    currentSubjectNode.questionSummary.workout_planModel.correctSubmitTimes = 0;
-    currentSubjectNode.questionSummary.workout_dragDrops = {};
-    currentSubjectNode.questionSummary.workout_dragDrops.incomplete_attempts = 0;
-    currentSubjectNode.questionSummary.workout_dragDrops.complete_attempts = 0;
-    currentSubjectNode.questionSummary.workout_dragDrops.correct_attampts = 0;
-    currentSubjectNode.questionSummary.workout_equation = {};
-    currentSubjectNode.questionSummary.workout_equation.times = 0;
-    currentSubjectNode.questionSummary.workout_equation.correct = 0;
-    currentSubjectNode.questionSummary.answer = {};
-    currentSubjectNode.questionSummary.answer.times = 0;
-    currentSubjectNode.questionSummary.answer.correct = 0;
-    currentSubjectNode.questionSummary.answer.submitTimes = 0;
-    currentSubjectNode.questionSummary.answer.correctSubmitTimes = 0;
-    currentSubjectNode.questionSummary.wrong_answer_reaction = {};
-    currentSubjectNode.questionSummary.wrong_answer_reaction.ignore = 0;
-    currentSubjectNode.questionSummary.wrong_answer_reaction.review = 0;
-    currentSubjectNode.questionSummary.wrong_answer_reaction.hint = 0;
-
-    for (var i_ssn = 0; i_ssn < currentSubjectNode.sessions.length; i_ssn++) {
-      currentSubjectNode.duration += currentSubjectNode.sessions[i_ssn].duration;
-      Array.prototype.push.apply(currentSubjectNode.offTask.instances, currentSubjectNode.sessions[i_ssn].offTask.instances);
-      currentSubjectNode.offTask.duration += currentSubjectNode.sessions[i_ssn].offTask.duration;
-
-      var videoID;
-
-      for (videoID in currentSubjectNode.sessions[i_ssn].videos) {
-        if (!currentSubjectNode.videos[videoID]) {
-          currentSubjectNode.videos[videoID] = {};
-          currentSubjectNode.videos[videoID].activeDuration = 0;
-          currentSubjectNode.videos[videoID].pauseTimes = 0;
-          currentSubjectNode.videos[videoID].pauseDuration = 0;
-          currentSubjectNode.videos[videoID].watchedIntervals = {};
-          currentSubjectNode.videos[videoID].watchedIntervals.rawIntervals = [];
-          currentSubjectNode.videos[videoID].watchedPercentage = 0;
-        }
-
-        var childVideoNode = currentSubjectNode.sessions[i_ssn].videos[videoID];
-        currentSubjectNode.videos[videoID].activeDuration += childVideoNode.activeDuration;
-        currentSubjectNode.videos[videoID].pauseTimes += childVideoNode.pauseTimes;
-        currentSubjectNode.videos[videoID].pauseDuration += childVideoNode.pauseDuration;
-        if (childVideoNode.watchedPercentage > 0.99) {
-          currentSubjectNode.videos[videoID].watchedPercentage = 1;
-        } else {
-          Array.prototype.push.apply(currentSubjectNode.videos[videoID].watchedIntervals.rawIntervals, childVideoNode.watchedIntervals.intervals);
-        }
-      }
-
-      for (videoID in currentSubjectNode.videos) {
-        if (currentSubjectNode.videos[videoID].watchedIntervals.rawIntervals &&
-          (currentSubjectNode.videos[videoID].watchedPercentage >= 1 ||
-           currentSubjectNode.videos[videoID].watchedIntervals.rawIntervals.length < 1))
-          continue;
-        currentSubjectNode.videos[videoID].watchedIntervals = unionPlayedVideoIntervals(currentSubjectNode.videos[videoID].watchedIntervals.rawIntervals);
-        currentSubjectNode.videos[videoID].watchedPercentage = currentSubjectNode.videos[videoID].watchedIntervals.playedLength / videoDuration[videoID];
-        if (currentSubjectNode.videos[videoID].watchedPercentage > 0.99)
-          currentSubjectNode.videos[videoID].watchedPercentage = 1;
-      }
-
-      currentSubjectNode.reinforcedActivities += currentSubjectNode.sessions[i_ssn].reinforcedActivities;
-      currentSubjectNode.completedActivities += currentSubjectNode.sessions[i_ssn].completedActivities;
-      currentSubjectNode.questionSummary.questionNumber += currentSubjectNode.sessions[i_ssn].questionSummary.questionNumber;
-      currentSubjectNode.questionSummary.duration += currentSubjectNode.sessions[i_ssn].questionSummary.duration;
-      currentSubjectNode.questionSummary.correct += currentSubjectNode.sessions[i_ssn].questionSummary.correct;
-      currentSubjectNode.questionSummary.highlightedWords += currentSubjectNode.sessions[i_ssn].questionSummary.highlightedWords;
-      currentSubjectNode.questionSummary.workout_planType.times += currentSubjectNode.sessions[i_ssn].questionSummary.workout_planType.times;
-      currentSubjectNode.questionSummary.workout_planType.correct += currentSubjectNode.sessions[i_ssn].questionSummary.workout_planType.correct;
-      currentSubjectNode.questionSummary.workout_planType.submitTimes += currentSubjectNode.sessions[i_ssn].questionSummary.workout_planType.submitTimes;
-      currentSubjectNode.questionSummary.workout_planType.correctSubmitTimes += currentSubjectNode.sessions[i_ssn].questionSummary.workout_planType.correctSubmitTimes;
-      currentSubjectNode.questionSummary.workout_planModel.times += currentSubjectNode.sessions[i_ssn].questionSummary.workout_planModel.times;
-      currentSubjectNode.questionSummary.workout_planModel.correct += currentSubjectNode.sessions[i_ssn].questionSummary.workout_planModel.correct;
-      currentSubjectNode.questionSummary.workout_planModel.submitTimes += currentSubjectNode.sessions[i_ssn].questionSummary.workout_planModel.submitTimes;
-      currentSubjectNode.questionSummary.workout_planModel.correctSubmitTimes += currentSubjectNode.sessions[i_ssn].questionSummary.workout_planModel.correctSubmitTimes;
-      currentSubjectNode.questionSummary.workout_dragDrops.incomplete_attempts += currentSubjectNode.sessions[i_ssn].questionSummary.workout_dragDrops.incomplete_attempts;
-      currentSubjectNode.questionSummary.workout_dragDrops.complete_attempts += currentSubjectNode.sessions[i_ssn].questionSummary.workout_dragDrops.complete_attempts;
-      currentSubjectNode.questionSummary.workout_dragDrops.correct_attampts += currentSubjectNode.sessions[i_ssn].questionSummary.workout_dragDrops.correct_attampts;
-      currentSubjectNode.questionSummary.workout_equation.times += currentSubjectNode.sessions[i_ssn].questionSummary.workout_equation.times;
-      currentSubjectNode.questionSummary.workout_equation.correct += currentSubjectNode.sessions[i_ssn].questionSummary.workout_equation.correct;
-      currentSubjectNode.questionSummary.answer.times += currentSubjectNode.sessions[i_ssn].questionSummary.answer.times;
-      currentSubjectNode.questionSummary.answer.correct += currentSubjectNode.sessions[i_ssn].questionSummary.answer.correct;
-      currentSubjectNode.questionSummary.answer.submitTimes += currentSubjectNode.sessions[i_ssn].questionSummary.answer.submitTimes;
-      currentSubjectNode.questionSummary.answer.correctSubmitTimes += currentSubjectNode.sessions[i_ssn].questionSummary.answer.correctSubmitTimes;
-      currentSubjectNode.questionSummary.wrong_answer_reaction.ignore += currentSubjectNode.sessions[i_ssn].questionSummary.wrong_answer_reaction.ignore;
-      currentSubjectNode.questionSummary.wrong_answer_reaction.review += currentSubjectNode.sessions[i_ssn].questionSummary.wrong_answer_reaction.review;
-      currentSubjectNode.questionSummary.wrong_answer_reaction.hint += currentSubjectNode.sessions[i_ssn].questionSummary.wrong_answer_reaction.hint;
-    }
   }
   // end of subjects
 }
