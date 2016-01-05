@@ -1996,8 +1996,8 @@ function processStudentLog(studentNode) {
               }
               nodetodelete.push(i_mer);
             }
-            questionNode.end = currentActivityNode.questions[untilIndex].end;
-            questionNode.duration = (new Date(questionNode.end)).getTime() - (new Date(questionNode.start)).getTime();
+            questionNode.endTime = currentActivityNode.questions[untilIndex].endTime;
+            questionNode.duration = (new Date(questionNode.endTime)).getTime() - (new Date(questionNode.startTime)).getTime();
           }
         }
         for (var i_d = 0; i_d<nodetodelete.length; i_d++) {
@@ -2007,9 +2007,8 @@ function processStudentLog(studentNode) {
         currentActivityNode.reinforcementTimes = 0;
         currentActivityNode.completed = false;
         currentActivityNode.questionSummary = {};
-        currentActivityNode.questionSummary.questionNumber = 0;
+        currentActivityNode.questionSummary.number = 0;
         currentActivityNode.questionSummary.duration = 0;
-        currentActivityNode.questionSummary.correct = 0;
         currentActivityNode.questionSummary.highlightedWords = 0;
         currentActivityNode.questionSummary.workout_planType = {};
         currentActivityNode.questionSummary.workout_planType.times = 0;
@@ -2033,6 +2032,7 @@ function processStudentLog(studentNode) {
         currentActivityNode.questionSummary.answer.correct = 0;
         currentActivityNode.questionSummary.answer.submitTimes = 0;
         currentActivityNode.questionSummary.answer.correctSubmitTimes = 0;        
+        currentActivityNode.questionSummary.answer.correctQuestions = 0;
         currentActivityNode.questionSummary.wrong_answer_reaction = {};
         currentActivityNode.questionSummary.wrong_answer_reaction.ignore = 0;
         currentActivityNode.questionSummary.wrong_answer_reaction.review = 0;
@@ -2091,6 +2091,7 @@ function processStudentLog(studentNode) {
             questionNode.answer.correctTimes = 0;
             questionNode.answer.wrongTimes = 0;
             questionNode.answer.final = null;
+            questionNode.answer.finalSubmit = null;
             questionNode.answer.submitTimes = 0;
             questionNode.answer.correctSubmitTimes = 0;
           }
@@ -2201,9 +2202,11 @@ function processStudentLog(studentNode) {
               case 'AC':
                 questionNode.answer.submitTimes++;
                 questionNode.answer.correctSubmitTimes++;
+                questionNode.answer.finalSubmit = true;
                 break;
               case 'AW':
                 questionNode.answer.submitTimes++;
+                questionNode.answer.finalSubmit = false;
                 break;
               case 'CA':
                 currentActivityNode.completed = true;
@@ -2225,7 +2228,7 @@ function processStudentLog(studentNode) {
           }
 
           // update questionSummary
-          currentActivityNode.questionSummary.questionNumber++;
+          currentActivityNode.questionSummary.number++;
           currentActivityNode.questionSummary.duration += questionNode.duration;
           
           if (questionNode.highlightedWords) {
@@ -2286,6 +2289,8 @@ function processStudentLog(studentNode) {
             currentActivityNode.questionSummary.answer.correct += questionNode.answer.correctTimes;
             currentActivityNode.questionSummary.answer.submitTimes += questionNode.answer.submitTimes;
             currentActivityNode.questionSummary.answer.correctSubmitTimes += questionNode.answer.correctSubmitTimes;
+            if (questionNode.answer.finalSubmit)
+              currentActivityNode.questionSummary.answer.correctQuestions ++;
             // if (questionNode.answer.final !== null) {
             //   currentActivityNode.questionSummary.answer.submitTimes++;
             //   if (questionNode.answer.final) {
@@ -2300,9 +2305,62 @@ function processStudentLog(studentNode) {
             currentActivityNode.questionSummary.wrong_answer_reaction.hint += questionNode.wrong_answer_reaction.hint;
           }
           // end of updating questionSummary
-
         }
 
+        // double verify the completeness
+        if (!currentActivityNode.completed) {
+          switch (currentActivityNode.activityID) {
+            case 2:
+              currentActivityNode.completed = currentActivityNode.videos && Object.keys(currentActivityNode.videos) && (Object.keys(currentActivityNode.videos).length == 3);
+              break;
+            case 6:
+              currentActivityNode.completed = currentActivityNode.videos && Object.keys(currentActivityNode.videos) && (Object.keys(currentActivityNode.videos).length == 2);
+              break;
+            case 3:
+            case 7:
+
+            case 4:
+            case 8:
+
+            case 5:
+            case 9:
+              currentActivityNode.completed = (currentActivityNode.questionSummary.number >= 10);
+              break;
+            // case 4:
+            // case 8:
+            //   break;
+            // case 5:
+            // case 9:
+            //   break;
+          }
+        }
+
+        // progress
+        switch (currentActivityNode.activityID) {
+          case 2:
+            if (currentActivityNode.videos && Object.keys(currentActivityNode.videos) && Object.keys(currentActivityNode.videos).length)
+              currentActivityNode.progress = Object.keys(currentActivityNode.videos).length/3.0;
+            else
+              currentActivityNode.progress = 0;
+            break;
+          case 6:
+            if (currentActivityNode.videos && Object.keys(currentActivityNode.videos) && Object.keys(currentActivityNode.videos).length)
+              currentActivityNode.progress = Object.keys(currentActivityNode.videos).length/2.0;
+            else
+              currentActivityNode.progress = 0;
+            break;
+          case 3:
+          case 7:
+          case 4:
+          case 8:
+          case 5:
+          case 9:
+            if (currentActivityNode.questionSummary.answer.submitTimes > 0)
+              currentActivityNode.progress = currentActivityNode.questionSummary.number / 10.0;
+            else
+              currentActivityNode.progress = 0;
+            break;
+        }
       });
       // end of activities
 
