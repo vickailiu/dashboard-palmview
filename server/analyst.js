@@ -511,7 +511,6 @@ var routes = {
 
     function summarize_question_view() {
       for(var i = 0; i< operational.students.length; i++) {
-        // if (operational.students[i] != 138) continue; //--- used for debugging purpose
         var studentNode = storage.getItemSync('student_' + operational.students[i]);
         if (!studentNode) throw "summarize: cannot find the student";
 
@@ -607,6 +606,7 @@ var routes = {
                 questionSummaryNode.answer.correct = 0;
                 questionSummaryNode.answer.submitTimes = 0;
                 questionSummaryNode.answer.correctSubmitTimes = 0;
+                questionSummaryNode.answer.finalCorrectSubmits = 0;
                 questionSummaryNode.wrong_answer_reaction = {};
                 questionSummaryNode.wrong_answer_reaction.ignore = 0;
                 questionSummaryNode.wrong_answer_reaction.review = 0;
@@ -692,12 +692,16 @@ var routes = {
                   if (questionNode.answer) {
                     questionSummaryNode.answer.times += questionNode.answer.times;
                     questionSummaryNode.answer.correct += questionNode.answer.correctTimes;
-                    if (questionNode.answer.final !== null) {
-                      questionSummaryNode.answer.submitTimes++;
-                      if (questionNode.answer.final) {
-                        questionSummaryNode.answer.correctSubmitTimes ++;
-                      }
-                    }
+                    // if (questionNode.answer.final !== null) {
+                    //   questionSummaryNode.answer.submitTimes++;
+                    //   if (questionNode.answer.final) {
+                    //     questionSummaryNode.answer.correctSubmitTimes++;
+                    //   }
+                    // }
+                    questionSummaryNode.answer.submitTimes += questionNode.answer.submitTimes
+                    questionSummaryNode.answer.correctSubmitTimes += questionNode.answer.correctSubmitTimes
+                    if (questionNode.answer.finalSubmit)
+                      questionNode.answer.finalCorrectSubmits++;
                   }
 
                   if (questionNode.wrong_answer_reaction) {
@@ -764,14 +768,15 @@ var routes = {
 
               activitySummaryNode.completedActivities = activityNode.completed ? 1 : 0;
               activitySummaryNode.attemptedActivities = 1;
+              activitySummaryNode.progress = activityNode.progress;
               activitySummaryNode.reinforcementAttempts = activityNode.reinforcementTimes;
               activitySummaryNode.duration = activityNode.duration;
 
               //activitySummaryNode.questionSummary = activityNode.questionSummary;
               activitySummaryNode.question = {};
               for (var mainattr in activityNode.questionSummary) {
-                if (mainattr == 'questionNumber') {
-                  activitySummaryNode.question.number = activityNode.questionSummary.questionNumber;
+                if (mainattr == 'number') {
+                  activitySummaryNode.question.number = activityNode.questionSummary.number;
                   if (activitySummaryNode.question.number === 0) break;
                   continue;
                 }
@@ -781,10 +786,10 @@ var routes = {
                 } else if (typeof entry == 'object') {
                   activitySummaryNode.question[mainattr] = {};
                   for (var subattr in entry) {
-                    activitySummaryNode.question[mainattr][subattr] = 1.0 * entry[subattr] / activityNode.questionSummary.questionNumber;
+                    activitySummaryNode.question[mainattr][subattr] = 1.0 * entry[subattr] / activityNode.questionSummary.number;
                   }
                 } else {
-                  activitySummaryNode.question[mainattr] = 1.0 * entry / activityNode.questionSummary.questionNumber;
+                  activitySummaryNode.question[mainattr] = 1.0 * entry / activityNode.questionSummary.number;
                 }
               }
               activitySummaryNode.question.sequenceCat = {};
@@ -905,7 +910,7 @@ var routes = {
                 }
 
                 if (nodeList.length > 0) {
-                  summaryTable[rowLabel]['student_'+studentNode.studentID][sessionNode.sessionID].summary = aggregate(nodeList); 
+                  summaryTable[rowLabel]['student_'+studentNode.studentID][sessionNode.sessionID].summary = aggregate(nodeList,[], ['progress']);
                   summaryTable[rowLabel]['student_'+studentNode.studentID][sessionNode.sessionID].summary.withParent = !!sessionNode.withParent; 
                 }
                 
@@ -929,7 +934,7 @@ var routes = {
             }
 
             if (nodeList.length > 0) {
-              summaryTable['subject_'+subjectID]['student_'+studentNode.studentID][sessionNode.sessionID] = aggregate(nodeList, ['withParent']);
+              summaryTable['subject_'+subjectID]['student_'+studentNode.studentID][sessionNode.sessionID] = aggregate(nodeList, ['withParent', 'progress']);
               summaryTable['subject_'+subjectID]['student_'+studentNode.studentID][sessionNode.sessionID].withParent = !!sessionNode.withParent;
             }
           }
@@ -1079,7 +1084,7 @@ var routes = {
       return summary;
     }
 
-    function aggregate(nodeList, exclusionList) {
+    function aggregate(nodeList, exclusionList, maxList) {
       var summary = {};
       var mainattrCount = {};
       for(var i = 0; i < nodeList.length; i++) {
@@ -1087,6 +1092,11 @@ var routes = {
 
         for(var mainattr in node) {
           if (exclusionList && exclusionList.indexOf(mainattr) > -1) continue;
+          if (maxList && maxList.indexOf(mainattr) > -1) {
+            if (!summary[mainattr] || (summary[mainattr]<node[mainattr]) ) {
+              summary[mainattr] = node[mainattr];
+            }
+          }
           if (typeof node[mainattr] == 'object') {
             if (!mainattrCount[mainattr]) {
               mainattrCount[mainattr] = node[mainattr].number;
@@ -1132,6 +1142,7 @@ var routes = {
 
       for (var mainattr in summary) {
         if (summary[mainattr] === null) continue;
+        if (maxList && maxList.indexOf(mainattr) > -1) continue;
         if (typeof summary[mainattr] == 'object') {
           for (var subattr in summary[mainattr]) {
             if (subattr == 'number') continue;
@@ -1158,14 +1169,6 @@ var routes = {
     }
 
   },
-  // // calculate the values across cohort
-  // "/api/macro": function(parsedUrl) {
-  //   return {unixtime: (new Date(parsedUrl.query.iso)).getTime()};
-  // },
-  // // calculate the values across questions
-  // "/api/questions": function(parsedUrl) {
-  //   return {unixtime: (new Date(parsedUrl.query.iso)).getTime()};
-  // },
   // retrive student node
   "/api/retrieve": function(parsedUrl) {
     var studentID = parsedUrl.query.studentID;
@@ -1951,7 +1954,7 @@ function processStudentLog(studentNode) {
             videoNode.watchedPercentage = 1;
         }
 
-        // clean the activitynode.questions
+        // clean the activityNode.questions
         var nodetodelete = [];
         for (var questionIndex = 0; questionIndex < currentActivityNode.questions.length; questionIndex++) {
           var questionNode = currentActivityNode.questions[questionIndex];
@@ -2229,7 +2232,7 @@ function processStudentLog(studentNode) {
 
           // update questionSummary
           currentActivityNode.questionSummary.number++;
-          currentActivityNode.questionSummary.duration += questionNode.duration;
+          currentActivityNode.questionSummary.duration += parseInt(questionNode.duration);
           
           if (questionNode.highlightedWords) {
             for (var i_highlight = 0; i_highlight<questionNode.highlightedWords.length; i_highlight++) {
@@ -2244,8 +2247,8 @@ function processStudentLog(studentNode) {
           }
           
           if (questionNode.workout_planType) {
-            currentActivityNode.questionSummary.workout_planType.times += questionNode.workout_planType.times;
-            currentActivityNode.questionSummary.workout_planType.correct += questionNode.workout_planType.correctTimes;
+            currentActivityNode.questionSummary.workout_planType.times += parseInt(questionNode.workout_planType.times);
+            currentActivityNode.questionSummary.workout_planType.correct += parseInt(questionNode.workout_planType.correctTimes);
             if (questionNode.workout_planType.final) {
               currentActivityNode.questionSummary.workout_planType.submitTimes++;
               //console.log('_' + questionNode.workout_planType.final +' vs '+ questionData.type.substr(6,1).toLowerCase());
@@ -2256,8 +2259,8 @@ function processStudentLog(studentNode) {
           }
           
           if (questionNode.workout_planModel) {
-            currentActivityNode.questionSummary.workout_planModel.times += questionNode.workout_planModel.times;
-            currentActivityNode.questionSummary.workout_planModel.correct += questionNode.workout_planModel.correctTimes;
+            currentActivityNode.questionSummary.workout_planModel.times += parseInt(questionNode.workout_planModel.times);
+            currentActivityNode.questionSummary.workout_planModel.correct += parseInt(questionNode.workout_planModel.correctTimes);
             if (questionNode.workout_planModel.final) {
               currentActivityNode.questionSummary.workout_planModel.submitTimes++;
               //console.log('_' + questionNode.workout_planModel.final.toLowerCase() +' vs '+ questionData.type.substr(6).toLowerCase());
@@ -2270,25 +2273,25 @@ function processStudentLog(studentNode) {
           if (questionNode.workout_dragDrops) {//} && questionNode.workout_dragDrops.fields) {
             for (var field in questionNode.workout_dragDrops) {
             //for (var i_ddf = 0; i_ddf<questionNode.workout_dragDrops.fields.length; i_ddf++) {
-              currentActivityNode.questionSummary.workout_dragDrops.incomplete_attempts += questionNode.workout_dragDrops[field].incomplete_attempts;
-              currentActivityNode.questionSummary.workout_dragDrops.complete_attempts += questionNode.workout_dragDrops[field].attempts.times;
-              currentActivityNode.questionSummary.workout_dragDrops.correct_attampts += questionNode.workout_dragDrops[field].attempts.correctTimes;
+              currentActivityNode.questionSummary.workout_dragDrops.incomplete_attempts += parseInt(questionNode.workout_dragDrops[field].incomplete_attempts);
+              currentActivityNode.questionSummary.workout_dragDrops.complete_attempts += parseInt(questionNode.workout_dragDrops[field].attempts.times);
+              currentActivityNode.questionSummary.workout_dragDrops.correct_attampts += parseInt(questionNode.workout_dragDrops[field].attempts.correctTimes);
             }
           }
 
           if (questionNode.workout_equation) {
             //for (var i_eq = 0; i_eq<questionNode.workout_equation.length; i_eq++) {
             for (var field in questionNode.workout_equation) {
-              currentActivityNode.questionSummary.workout_equation.times += questionNode.workout_equation[field].times;
-              currentActivityNode.questionSummary.workout_equation.correct += questionNode.workout_equation[field].correctTimes;
+              currentActivityNode.questionSummary.workout_equation.times += parseInt(questionNode.workout_equation[field].times);
+              currentActivityNode.questionSummary.workout_equation.correct += parseInt(questionNode.workout_equation[field].correctTimes);
             }
           }
 
           if (questionNode.answer) {
-            currentActivityNode.questionSummary.answer.times += questionNode.answer.times;
-            currentActivityNode.questionSummary.answer.correct += questionNode.answer.correctTimes;
-            currentActivityNode.questionSummary.answer.submitTimes += questionNode.answer.submitTimes;
-            currentActivityNode.questionSummary.answer.correctSubmitTimes += questionNode.answer.correctSubmitTimes;
+            currentActivityNode.questionSummary.answer.times += parseInt(questionNode.answer.times);
+            currentActivityNode.questionSummary.answer.correct += parseInt(questionNode.answer.correctTimes);
+            currentActivityNode.questionSummary.answer.submitTimes += parseInt(questionNode.answer.submitTimes);
+            currentActivityNode.questionSummary.answer.correctSubmitTimes += parseInt(questionNode.answer.correctSubmitTimes);
             if (questionNode.answer.finalSubmit)
               currentActivityNode.questionSummary.answer.correctQuestions ++;
             // if (questionNode.answer.final !== null) {
@@ -2300,9 +2303,9 @@ function processStudentLog(studentNode) {
           }
 
           if (questionNode.wrong_answer_reaction) {
-            currentActivityNode.questionSummary.wrong_answer_reaction.ignore += questionNode.wrong_answer_reaction.ignore;
-            currentActivityNode.questionSummary.wrong_answer_reaction.review += questionNode.wrong_answer_reaction.review;
-            currentActivityNode.questionSummary.wrong_answer_reaction.hint += questionNode.wrong_answer_reaction.hint;
+            currentActivityNode.questionSummary.wrong_answer_reaction.ignore += parseInt(questionNode.wrong_answer_reaction.ignore);
+            currentActivityNode.questionSummary.wrong_answer_reaction.review += parseInt(questionNode.wrong_answer_reaction.review);
+            currentActivityNode.questionSummary.wrong_answer_reaction.hint += parseInt(questionNode.wrong_answer_reaction.hint);
           }
           // end of updating questionSummary
         }
@@ -2361,8 +2364,12 @@ function processStudentLog(studentNode) {
               currentActivityNode.progress = 0;
             break;
         }
+        if (currentActivityNode.progress > 1) {
+          currentActivityNode.progress = 1;
+        }
       });
       // end of activities
+
 
     });
     // end of sessions
